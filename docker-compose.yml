@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: optimus
+      POSTGRES_USER: optimus
+      POSTGRES_PASSWORD: optimus
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "optimus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://optimus:optimus@db:5432/optimus
+      LANGFUSE_HOST: http://langfuse:3000
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    ports:
+      - "8000:8000"
+
+  langfuse-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  langfuse:
+    image: langfuse/langfuse:latest
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://langfuse:langfuse@langfuse-db:5432/langfuse
+      NEXTAUTH_SECRET: dev-secret
+      NEXTAUTH_URL: http://localhost:3001
+      LANGFUSE_OPENAI_BASE_URL: https://api.openai.com/v1
+    ports:
+      - "3001:3000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
