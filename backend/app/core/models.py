@@ -31,3 +31,24 @@ class DocumentChunk(Base):
     content = Column(Text, nullable=False)
     metadata = Column(JSONB, nullable=True)
     embedding = Column(Vector(384), nullable=True)
+
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    customer_id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    email = Column(String(255), nullable=False)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    order_id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(
+        Integer, ForeignKey("customers.customer_id", ondelete="CASCADE"), nullable=False
+    )
+    order_date = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    status_tracking_id = Column(String(64), nullable=False)

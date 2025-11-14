@@ -65,6 +65,50 @@ async def index_document(session: AsyncSession, file: UploadFile) -> int:
     return document.id
 
 
+async def index_text(
+    session: AsyncSession,
+    text_content: str,
+    filename: str,
+    content_type: str = "text/plain",
+) -> int:
+    """Ingest a raw text document into the RAG store."""
+
+    settings = get_settings()
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=settings.rag_chunk_size,
+        chunk_overlap=settings.rag_chunk_overlap,
+    )
+    chunks = splitter.split_text(text_content)
+
+    if not chunks:
+        raise ValueError("Provided text contained no extractable text")
+
+    provider = get_embedding_provider()
+    embeddings = await provider.embed_texts(chunks)
+
+    document = models.Document(
+        filename=filename,
+        content_type=content_type,
+        metadata={},
+    )
+    session.add(document)
+    await session.flush()
+
+    for idx, (chunk_text, embedding) in enumerate(zip(chunks, embeddings)):
+        chunk = models.DocumentChunk(
+            document_id=document.id,
+            chunk_index=idx,
+            content=chunk_text,
+            metadata={},
+            embedding=embedding,
+        )
+        session.add(chunk)
+
+    await session.commit()
+    return document.id
+
+
 def _extract_text_from_pdf(raw_bytes: bytes) -> str:
     """Extract concatenated text from a PDF file using PyMuPDF."""
 
