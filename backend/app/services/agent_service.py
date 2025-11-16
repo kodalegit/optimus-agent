@@ -28,22 +28,31 @@ _TOOL_LABELS: dict[str, str] = {
 
 @lru_cache(maxsize=4)
 def _get_agent(provider: str, model_name: str):
+    """Return a cached LangChain agent for the given provider/model."""
+
     llm = get_chat_model(provider, model_name)
     tools = list(get_tools())
-    callbacks = list(get_callback_handlers())
     return create_agent(
         llm,
         tools,
         system_prompt=SYSTEM_PROMPT,
-        callbacks=callbacks or None,
     )
 
 
 async def run_agent_query(query: str, provider: str, model_name: str) -> str:
     """Execute the agent once and return the final text answer."""
-
     agent = _get_agent(provider, model_name)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": query}]})
+
+    callbacks = list(get_callback_handlers())
+    config: dict[str, Any] | None = {"callbacks": callbacks} if callbacks else None
+
+    if config is not None:
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": query}]},
+            config=config,
+        )
+    else:
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": query}]})
 
     messages = result.get("messages", []) if isinstance(result, dict) else []
     if not messages:
@@ -61,9 +70,18 @@ async def stream_agent_events(
     agent = _get_agent(provider, model_name)
     final_text: str | None = None
 
+    callbacks = list(get_callback_handlers())
+    config: dict[str, Any] | None = {"callbacks": callbacks} if callbacks else None
+
+    stream_kwargs: dict[str, Any] = {
+        "stream_mode": "updates",
+    }
+    if config is not None:
+        stream_kwargs["config"] = config
+
     async for chunk in agent.astream(
         {"messages": [{"role": "user", "content": query}]},
-        stream_mode="updates",
+        **stream_kwargs,
     ):
         for node, payload in chunk.items():
             messages = payload.get("messages", []) if isinstance(payload, dict) else []
