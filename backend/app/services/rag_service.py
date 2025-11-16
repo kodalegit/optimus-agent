@@ -46,7 +46,7 @@ async def index_document(session: AsyncSession, file: UploadFile) -> int:
     document = models.Document(
         filename=file.filename,
         content_type=content_type,
-        metadata={},
+        metadata_={},
     )
     session.add(document)
     await session.flush()
@@ -56,7 +56,7 @@ async def index_document(session: AsyncSession, file: UploadFile) -> int:
             document_id=document.id,
             chunk_index=idx,
             content=chunk_text,
-            metadata={},
+            metadata_={},
             embedding=embedding,
         )
         session.add(chunk)
@@ -90,7 +90,7 @@ async def index_text(
     document = models.Document(
         filename=filename,
         content_type=content_type,
-        metadata={},
+        metadata_={},
     )
     session.add(document)
     await session.flush()
@@ -100,7 +100,7 @@ async def index_text(
             document_id=document.id,
             chunk_index=idx,
             content=chunk_text,
-            metadata={},
+            metadata_={},
             embedding=embedding,
         )
         session.add(chunk)
