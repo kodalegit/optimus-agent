@@ -1,40 +1,32 @@
-"""Sentence-transformers embedding helper."""
+"""Embedding helper using remote OpenAI embeddings."""
 
 from __future__ import annotations
 
 import asyncio
 from functools import lru_cache
-from typing import Iterable, Sequence
+from typing import Sequence
 
-from sentence_transformers import SentenceTransformer
+from langchain_openai import OpenAIEmbeddings
 
 from ..config import get_settings
 
 
 class EmbeddingProvider:
-    """Thin wrapper around a sentence-transformers model."""
+    """Thin wrapper around an OpenAI embedding model."""
 
-    def __init__(self, model_name: str) -> None:
-        self._model_name = model_name
-
-    @property
-    def model(self) -> SentenceTransformer:
-        return _get_model(self._model_name)
+    def __init__(self, model_name: str, api_key: str | None) -> None:
+        if not api_key:
+            raise RuntimeError("Missing OpenAI API key for embeddings")
+        self._embedder = OpenAIEmbeddings(model=model_name, api_key=api_key)
 
     async def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
-        """Embed a batch of texts async-friendly."""
+        """Embed a batch of texts async-friendly using OpenAI embeddings."""
 
-        return await asyncio.to_thread(
-            lambda: self.model.encode(list(texts), normalize_embeddings=True).tolist()
-        )
-
-
-@lru_cache(maxsize=2)
-def _get_model(model_name: str) -> SentenceTransformer:
-    return SentenceTransformer(model_name)
+        texts_list = list(texts)
+        return await asyncio.to_thread(self._embedder.embed_documents, texts_list)
 
 
 @lru_cache(maxsize=1)
 def get_embedding_provider() -> EmbeddingProvider:
     settings = get_settings()
-    return EmbeddingProvider(settings.embedding_model_name)
+    return EmbeddingProvider(settings.embedding_model_name, settings.openai_api_key)

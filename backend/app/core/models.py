@@ -30,7 +30,7 @@ class DocumentChunk(Base):
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     metadata_ = Column("metadata", JSONB, nullable=True)
-    embedding = Column(Vector(384), nullable=True)
+    embedding = Column(Vector(1536), nullable=True)
 
 
 class Customer(Base):

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://optimus:optimus@db:5432/optimus"
 
-    embedding_model_name: str = "all-MiniLM-L6-v2"
+    embedding_model_name: str = "text-embedding-3-small"
     rag_chunk_size: int = 500
     rag_chunk_overlap: int = 50
 
