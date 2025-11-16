@@ -23,7 +23,7 @@ type TabKey = "chat" | "documents";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabKey>("chat");
-  const [modelId, setModelId] = useState<ModelId>("gpt-5");
+  const [modelId, setModelId] = useState<ModelId>("gpt-5-mini");
 
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -82,7 +82,7 @@ export default function Home() {
             }
 
             if (event.type === "agent_step") {
-              const aiMessages = event.messages.filter(
+              const aiMessages = event.step.messages.filter(
                 (message) => message.type === "ai"
               );
               const last = aiMessages[aiMessages.length - 1];
@@ -100,7 +100,6 @@ export default function Home() {
             ? error.message
             : "Failed to stream agent response";
         setStreamError(message);
-        throw error;
       } finally {
         setIsStreaming(false);
         streamAbortRef.current = null;
@@ -264,21 +263,28 @@ export default function Home() {
             >
               {messages.length === 0 ? (
                 <p className="text-neutral-500">
-                  Ask OpsAgent an operational question to get started.
+                  Ask Optimus an operational question to get started.
                 </p>
               ) : (
                 <ChatMessages
                   messages={messages}
                   streamingContent={streamingAssistantContent}
                   isStreaming={isStreaming || agentMutation.isPending}
+                  timeline={
+                    (isStreaming ||
+                      agentMutation.isPending ||
+                      streamEvents.length > 0) && (
+                      <ExecutionTimeline
+                        events={streamEvents}
+                        isStreaming={
+                          isStreaming || agentMutation.isPending
+                        }
+                      />
+                    )
+                  }
                 />
               )}
             </div>
-
-            <ExecutionTimeline
-              events={streamEvents}
-              isStreaming={isStreaming || agentMutation.isPending}
-            />
 
             {streamError && (
               <p className="text-xs text-red-400">{streamError}</p>

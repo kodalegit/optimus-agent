@@ -35,7 +35,7 @@ export function OptimizedMarkdown({ content }: OptimizedMarkdownProps) {
   }
 
   return (
-    <div className="text-foreground">
+    <div className="text-neutral-100">
       {blocks.map((block, index) => (
         <MemoizedMarkdownBlock
           // eslint-disable-next-line react/no-array-index-key
