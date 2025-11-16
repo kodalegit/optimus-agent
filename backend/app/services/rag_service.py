@@ -7,7 +7,8 @@ from typing import Any, List
 import fitz  # PyMuPDF
 from fastapi import UploadFile
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sqlalchemy import text
+from sqlalchemy import Integer, bindparam, text
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_settings
@@ -130,14 +131,18 @@ async def query(
     provider = get_embedding_provider()
     [query_embedding] = await provider.embed_texts([query_text])
 
-    sql = text(
-        """
-        SELECT id, document_id, content, metadata,
-               1 - (embedding <-> :embedding) AS score
-        FROM document_chunks
-        ORDER BY embedding <-> :embedding
-        LIMIT :top_k
-        """
+    sql = (
+        text(
+            """
+            SELECT id, document_id, content, metadata,
+                   1 - (embedding <-> :embedding) AS score
+            FROM document_chunks
+            ORDER BY embedding <-> :embedding
+            LIMIT :top_k
+            """
+        )
+        .bindparams(bindparam("embedding", type_=Vector(1536)))
+        .bindparams(bindparam("top_k", type_=Integer))
     )
 
     result = await session.execute(
