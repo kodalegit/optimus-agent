@@ -25,6 +25,20 @@ _TOOL_LABELS: dict[str, str] = {
     "search": "Search",
 }
 
+_FINAL_ANSWER_DELIMITER = "<FINAL_ANSWER>"
+_FINAL_ANSWER_CLOSING = "</FINAL_ANSWER>"
+
+
+def _extract_final_answer(text: str) -> str:
+    if not text:
+        return ""
+    index = text.find(_FINAL_ANSWER_DELIMITER)
+    if index == -1:
+        cleaned = text
+    else:
+        cleaned = text[index + len(_FINAL_ANSWER_DELIMITER) :].lstrip()
+    return cleaned.replace(_FINAL_ANSWER_CLOSING, "")
+
 
 @lru_cache(maxsize=4)
 def _get_agent(provider: str, model_name: str):
@@ -57,7 +71,8 @@ async def run_agent_query(query: str, provider: str, model_name: str) -> str:
     messages = result.get("messages", []) if isinstance(result, dict) else []
     if not messages:
         return ""
-    return _message_content_to_text(messages[-1])
+    raw_text = _message_content_to_text(messages[-1])
+    return _extract_final_answer(raw_text)
 
 
 async def stream_agent_events(
@@ -65,109 +80,142 @@ async def stream_agent_events(
     provider: str,
     model_name: str,
 ) -> AsyncIterator[str]:
-    """Yield SSE-formatted updates from the agent run using stream_mode='updates'."""
+    """Yield SSE-formatted updates and messages from the agent run"""
 
     agent = _get_agent(provider, model_name)
     final_text: str | None = None
+    pending_text: str = ""
+    final_answer_started = False
 
     callbacks = list(get_callback_handlers())
     config: dict[str, Any] | None = {"callbacks": callbacks} if callbacks else None
 
     stream_kwargs: dict[str, Any] = {
-        "stream_mode": "updates",
+        "stream_mode": ["updates", "messages"],
     }
     if config is not None:
         stream_kwargs["config"] = config
 
-    async for chunk in agent.astream(
+    async for mode, data in agent.astream(
         {"messages": [{"role": "user", "content": query}]},
         **stream_kwargs,
     ):
-        for node, payload in chunk.items():
-            messages = payload.get("messages", []) if isinstance(payload, dict) else []
-            if not messages:
+        if mode == "updates":
+            chunk = data
+            if not isinstance(chunk, dict):
                 continue
+            for node, payload in chunk.items():
+                messages = (
+                    payload.get("messages", []) if isinstance(payload, dict) else []
+                )
+                if not messages:
+                    continue
 
-            for raw in messages:
-                serialized = _serialize_message(raw)
-                message_type = serialized["type"]
+                for raw in messages:
+                    serialized = _serialize_message(raw)
+                    message_type = serialized["type"]
 
-                if message_type == "ai":
-                    tool_calls = serialized.get("tool_calls") or []
-                    if tool_calls:
-                        for call in tool_calls:
-                            args_text = _format_tool_args(call.get("args"))
-                            yield _format_sse(
-                                {
-                                    "type": "agent_step",
-                                    "step": {
-                                        "node": node,
-                                        "label": f"{_friendly_tool_title(call.get('name'))} request",
-                                        "status": "pending",
-                                        "kind": "tool_call",
-                                        "tool_name": call.get("name"),
-                                        "tool_call_id": call.get("id"),
-                                        "preview": _preview_text(args_text),
-                                        "messages": [
-                                            {
-                                                "type": "tool_call",
-                                                "content": args_text,
-                                            }
-                                        ],
-                                    },
-                                }
-                            )
-                    else:
-                        final_text = serialized["content"]
+                    if message_type == "ai":
+                        tool_calls = serialized.get("tool_calls") or []
+                        if tool_calls:
+                            for call in tool_calls:
+                                args_text = _format_tool_args(call.get("args"))
+                                yield _format_sse(
+                                    {
+                                        "type": "agent_step",
+                                        "step": {
+                                            "node": node,
+                                            "label": f"{_friendly_tool_title(call.get('name'))} request",
+                                            "status": "pending",
+                                            "kind": "tool_call",
+                                            "tool_name": call.get("name"),
+                                            "tool_call_id": call.get("id"),
+                                            "preview": _preview_text(args_text),
+                                            "messages": [
+                                                {
+                                                    "type": "tool_call",
+                                                    "content": args_text,
+                                                }
+                                            ],
+                                        },
+                                    }
+                                )
+
+                    elif message_type == "tool":
+                        preview = _preview_text(serialized["content"])
+                        tool_name = serialized.get("name")
+                        status = "error" if "error" in preview.lower() else "done"
                         yield _format_sse(
                             {
                                 "type": "agent_step",
                                 "step": {
                                     "node": node,
-                                    "label": "Final response",
-                                    "status": "done",
-                                    "kind": "final",
+                                    "label": f"{_friendly_tool_title(tool_name)} result",
+                                    "status": status,
+                                    "kind": "tool_result",
+                                    "tool_name": tool_name,
+                                    "tool_call_id": serialized.get("tool_call_id"),
+                                    "preview": preview,
                                     "messages": [serialized],
                                 },
                             }
                         )
 
-                elif message_type == "tool":
-                    preview = _preview_text(serialized["content"])
-                    tool_name = serialized.get("name")
-                    status = "error" if "error" in preview.lower() else "done"
-                    yield _format_sse(
-                        {
-                            "type": "agent_step",
-                            "step": {
-                                "node": node,
-                                "label": f"{_friendly_tool_title(tool_name)} result",
-                                "status": status,
-                                "kind": "tool_result",
-                                "tool_name": tool_name,
-                                "tool_call_id": serialized.get("tool_call_id"),
-                                "preview": preview,
-                                "messages": [serialized],
-                            },
-                        }
-                    )
+                    else:
+                        yield _format_sse(
+                            {
+                                "type": "agent_step",
+                                "step": {
+                                    "node": node,
+                                    "label": "Agent update",
+                                    "status": "in_progress",
+                                    "kind": "thought",
+                                    "messages": [serialized],
+                                },
+                            }
+                        )
 
-                else:
-                    yield _format_sse(
-                        {
-                            "type": "agent_step",
-                            "step": {
-                                "node": node,
-                                "label": "Agent update",
-                                "status": "in_progress",
-                                "kind": "thought",
-                                "messages": [serialized],
-                            },
-                        }
-                    )
+        elif mode == "messages":
+            message_chunk, _metadata = data
 
-    if final_text:
-        yield _format_sse({"type": "final_answer", "content": final_text})
+            tool_calls = getattr(message_chunk, "tool_calls", None)
+            if tool_calls:
+                continue
+
+            text = _message_content_to_text(message_chunk)
+            if not text:
+                continue
+
+            pending_text += text
+
+            if not final_answer_started:
+                index = pending_text.find(_FINAL_ANSWER_DELIMITER)
+                if index == -1:
+                    continue
+
+                final_answer_started = True
+                pending_text = pending_text[index + len(_FINAL_ANSWER_DELIMITER) :]
+                pending_text = pending_text.lstrip("\n ")
+
+            final_text = (final_text or "") + pending_text
+            final_text = final_text.replace(_FINAL_ANSWER_CLOSING, "")
+            pending_text = ""
+            yield _format_sse(
+                {
+                    "type": "final_answer",
+                    "content": final_text,
+                }
+            )
+
+    if not final_answer_started and pending_text:
+        final_text = (final_text or "") + pending_text
+        final_text = final_text.replace(_FINAL_ANSWER_CLOSING, "")
+        yield _format_sse(
+            {
+                "type": "final_answer",
+                "content": final_text,
+            }
+        )
 
 
 def _serialize_message(message: BaseMessage) -> dict[str, Any]:
