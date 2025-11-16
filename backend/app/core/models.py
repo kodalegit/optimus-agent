@@ -14,7 +14,7 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     content_type = Column(String(128), nullable=False)
-    metadata = Column(JSONB, nullable=True)
+    metadata_ = Column("metadata", JSONB, nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -29,7 +29,7 @@ class DocumentChunk(Base):
     )
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
-    metadata = Column(JSONB, nullable=True)
+    metadata_ = Column("metadata", JSONB, nullable=True)
     embedding = Column(Vector(384), nullable=True)
 
 
