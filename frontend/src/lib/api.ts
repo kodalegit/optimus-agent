@@ -11,16 +11,31 @@ export interface AgentQueryResponse {
   message: string;
 }
 
+export type AgentStepStatus = "pending" | "in_progress" | "done" | "error";
+
+export type AgentStepKind = "tool_call" | "tool_result" | "thought" | "final";
+
 export interface AgentStreamStepMessage {
   type: string;
   content: string;
+  name?: string;
+}
+
+export interface AgentStreamStep {
+  node: string;
+  label: string;
+  status: AgentStepStatus;
+  kind: AgentStepKind;
+  tool_name?: string;
+  tool_call_id?: string;
+  preview?: string;
+  messages: AgentStreamStepMessage[];
 }
 
 export type AgentStreamEvent =
   | {
       type: "agent_step";
-      node: string;
-      messages: AgentStreamStepMessage[];
+      step: AgentStreamStep;
     }
   | {
       type: "final_answer";

@@ -13,74 +13,17 @@ from langchain_core.messages import BaseMessage
 from .llm_factory import get_chat_model
 from .tool_registry import get_tools
 from .telemetry import get_callback_handlers
+from .prompts import SYSTEM_PROMPT
 
 
-DEFAULT_SYSTEM_PROMPT = (
-    "You are OpsAgent, an internal operations assistant for a small e-commerce "
-    "company. Your users are internal staff (support, operations, finance).\n\n"
-    "GENERAL BEHAVIOUR\n"
-    "- Always think step by step and plan your approach before answering.\n"
-    "- Use the available tools whenever they can improve accuracy instead of "
-    "guessing.\n"
-    "- Prefer fresh, tool-based data (SQL/HTTP/RAG) over prior assumptions.\n"
-    "- If something is truly unknown, say so explicitly.\n\n"
-    "OUTPUT FORMAT (MARKDOWN)\n"
-    "- Respond in GitHub-flavoured Markdown.\n"
-    "- Use short sections with headings (e.g. '## Plan', '## Answer', '## Details').\n"
-    "- Use bullet lists for multi-step explanations.\n"
-    "- When referencing tool results, summarise them in natural language and, if "
-    "useful, include small inline code blocks for SQL or HTTP snippets.\n\n"
-    "TOOLS AND WHEN TO USE THEM\n"
-    "- sql_fetch: Run read-only SELECT queries against the internal Postgres "
-    "database. Tables include at least: customers(customer_id, name, email), "
-    "orders(order_id, customer_id, order_date, status_tracking_id), documents, "
-    "document_chunks. Use this to look up customers, orders, and other internal "
-    "records. Only SELECT is allowed.\n"
-    "- http_request: Call external HTTP endpoints (only allowed prefixes like "
-    "https://webhook.site). Use this for live shipping status or other mock APIs.\n"
-    "- rag_lookup: Retrieve relevant chunks from uploaded or seeded company "
-    "documents (e.g. return policies, procedures) using a retrieval-augmented "
-    "generation pipeline. Use this instead of inventing policy text.\n"
-    "- calculator: Safely evaluate basic arithmetic expressions, especially for "
-    "fees, totals, percentages, and simple what-if calculations.\n"
-    "- send_mail: Send a mock email (to, subject, body). The system logs the "
-    "email and returns a confirmation payload. Use this when asked to notify or "
-    "summarise something by email.\n"
-    "- search: Return mock search results for a query across internal/external "
-    "sources. Use this for competitive research or general lookups that are not "
-    "covered by SQL/RAG.\n\n"
-    "WORKFLOW PATTERN\n"
-    "When you receive a complex request, follow this pattern:\n"
-    "1) Briefly restate the task and outline a plan in 2-4 bullets.\n"
-    "2) Execute the plan using tools as needed (SQL, HTTP, RAG, calculator, "
-    "send_mail, search).\n"
-    "3) Synthesize a concise final answer in Markdown, clearly separating the "
-    "user-facing explanation from any technical details.\n"
-    "4) Where appropriate, include a short 'What I did' section listing which "
-    "tools were used.\n\n"
-    "FEW-SHOT EXAMPLE (ABRIDGED)\n"
-    "User: 'A customer named "
-    "Maria Rodriguez"
-    " just called. She wants to know "
-    "the status of her most recent order. Also, look up our return policy for "
-    "electronics. Based on her order, calculate the potential restocking fee for "
-    "returning one item that costs $129.99. Finally, send a summary of this to "
-    '"support@mycompany.com" with the subject "Inquiry for Maria Rodriguez".\'\n'
-    "Assistant (high-level behaviour, not literal text):\n"
-    "- Use sql_fetch to find the customer_id for 'Maria Rodriguez' from the "
-    "customers table, then her latest order and status_tracking_id from orders.\n"
-    "- Use http_request to call the shipping status endpoint for that tracking "
-    "ID (e.g. a webhook.site mock) and read the JSON status.\n"
-    "- Use rag_lookup with a query like 'return policy for electronics "
-    "restocking fee' to fetch the relevant policy chunk.\n"
-    "- Use calculator to compute the fee, e.g. 129.99 * 0.15.\n"
-    "- Use send_mail to send a concise email to support@mycompany.com with the "
-    "requested subject and a markdown summary in the body.\n"
-    "- Finally, answer the user in Markdown with sections for order status, "
-    "policy summary, calculated fee, and confirmation that an email was sent.\n\n"
-    "Above all, be accurate, tool-driven, and concise, and keep the final answer "
-    "cleanly formatted in Markdown."
-)
+_TOOL_LABELS: dict[str, str] = {
+    "sql_fetch": "SQL lookup",
+    "http_request": "HTTP request",
+    "rag_lookup": "Knowledge lookup",
+    "calculator": "Calculator",
+    "send_mail": "Email",
+    "search": "Search",
+}
 
 
 @lru_cache(maxsize=4)
@@ -91,7 +34,7 @@ def _get_agent(provider: str, model_name: str):
     return create_agent(
         llm,
         tools,
-        system_prompt=DEFAULT_SYSTEM_PROMPT,
+        system_prompt=SYSTEM_PROMPT,
         callbacks=callbacks or None,
     )
 
@@ -126,25 +69,111 @@ async def stream_agent_events(
             messages = payload.get("messages", []) if isinstance(payload, dict) else []
             if not messages:
                 continue
-            serialized = [_serialize_message(msg) for msg in messages]
-            for raw, ser in zip(messages, serialized):
-                if getattr(raw, "type", "") == "ai" and not getattr(
-                    raw, "tool_calls", None
-                ):
-                    final_text = ser["content"]
-            yield _format_sse(
-                {"type": "agent_step", "node": node, "messages": serialized}
-            )
+
+            for raw in messages:
+                serialized = _serialize_message(raw)
+                message_type = serialized["type"]
+
+                if message_type == "ai":
+                    tool_calls = serialized.get("tool_calls") or []
+                    if tool_calls:
+                        for call in tool_calls:
+                            args_text = _format_tool_args(call.get("args"))
+                            yield _format_sse(
+                                {
+                                    "type": "agent_step",
+                                    "step": {
+                                        "node": node,
+                                        "label": f"{_friendly_tool_title(call.get('name'))} request",
+                                        "status": "pending",
+                                        "kind": "tool_call",
+                                        "tool_name": call.get("name"),
+                                        "tool_call_id": call.get("id"),
+                                        "preview": _preview_text(args_text),
+                                        "messages": [
+                                            {
+                                                "type": "tool_call",
+                                                "content": args_text,
+                                            }
+                                        ],
+                                    },
+                                }
+                            )
+                    else:
+                        final_text = serialized["content"]
+                        yield _format_sse(
+                            {
+                                "type": "agent_step",
+                                "step": {
+                                    "node": node,
+                                    "label": "Final response",
+                                    "status": "done",
+                                    "kind": "final",
+                                    "messages": [serialized],
+                                },
+                            }
+                        )
+
+                elif message_type == "tool":
+                    preview = _preview_text(serialized["content"])
+                    tool_name = serialized.get("name")
+                    status = "error" if "error" in preview.lower() else "done"
+                    yield _format_sse(
+                        {
+                            "type": "agent_step",
+                            "step": {
+                                "node": node,
+                                "label": f"{_friendly_tool_title(tool_name)} result",
+                                "status": status,
+                                "kind": "tool_result",
+                                "tool_name": tool_name,
+                                "tool_call_id": serialized.get("tool_call_id"),
+                                "preview": preview,
+                                "messages": [serialized],
+                            },
+                        }
+                    )
+
+                else:
+                    yield _format_sse(
+                        {
+                            "type": "agent_step",
+                            "step": {
+                                "node": node,
+                                "label": "Agent update",
+                                "status": "in_progress",
+                                "kind": "thought",
+                                "messages": [serialized],
+                            },
+                        }
+                    )
 
     if final_text:
         yield _format_sse({"type": "final_answer", "content": final_text})
 
 
 def _serialize_message(message: BaseMessage) -> dict[str, Any]:
-    return {
+    data: dict[str, Any] = {
         "type": getattr(message, "type", "message"),
         "content": _message_content_to_text(message),
     }
+
+    name = getattr(message, "name", None)
+    if name:
+        data["name"] = name
+
+    tool_call_id = getattr(message, "tool_call_id", None)
+    if tool_call_id:
+        data["tool_call_id"] = tool_call_id
+
+    tool_calls = getattr(message, "tool_calls", None)
+    if tool_calls:
+        normalized: list[dict[str, Any]] = []
+        for call in tool_calls:
+            normalized.append(_normalize_tool_call(call))
+        data["tool_calls"] = normalized
+
+    return data
 
 
 def _message_content_to_text(message: BaseMessage) -> str:
@@ -152,12 +181,63 @@ def _message_content_to_text(message: BaseMessage) -> str:
     if isinstance(content, list):
         parts: list[str] = []
         for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
+            if not isinstance(block, dict):
+                continue
+            block_type = block.get("type")
+            if block_type == "text":
                 parts.append(block.get("text", ""))
+            elif block_type == "tool_call":
+                name = block.get("name", "tool")
+                args = _format_tool_args(block.get("args"))
+                parts.append(f"Tool call -> {name}: {args}")
         if parts:
             return "\n".join(parts)
-        return json.dumps(content)
+        return json.dumps(content, ensure_ascii=False)
     return str(content)
+
+
+def _friendly_tool_title(name: str | None) -> str:
+    if not name:
+        return "Tool"
+    return _TOOL_LABELS.get(name, name.replace("_", " ").title())
+
+
+def _format_tool_args(args: Any) -> str:
+    if args in (None, ""):
+        return "No arguments provided."
+    try:
+        return json.dumps(args, ensure_ascii=False, indent=2)
+    except TypeError:
+        return str(args)
+
+
+def _preview_text(text: str, limit: int = 160) -> str:
+    snippet = text.strip()
+    if len(snippet) <= limit:
+        return snippet
+    return f"{snippet[:limit].rstrip()}…"
+
+
+def _normalize_tool_call(call: Any) -> dict[str, Any]:
+    if isinstance(call, dict):
+        return {
+            "id": call.get("id"),
+            "name": call.get("name"),
+            "args": call.get("args", {}),
+        }
+    dict_method = getattr(call, "dict", None)
+    if callable(dict_method):  # type: ignore[truthy-function]
+        data = dict_method()
+        return {
+            "id": data.get("id"),
+            "name": data.get("name"),
+            "args": data.get("args", {}),
+        }
+    return {
+        "id": getattr(call, "id", None),
+        "name": getattr(call, "name", None),
+        "args": getattr(call, "args", {}),
+    }
 
 
 def _format_sse(payload: dict[str, Any]) -> str:

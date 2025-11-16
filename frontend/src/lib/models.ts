@@ -1,4 +1,4 @@
-export type ModelId = "gpt-5" | "gemini-2.5-flash";
+export type ModelId = "gpt-5-mini" | "gemini-2.5-flash";
 
 export interface ModelOption {
   id: ModelId;
@@ -9,10 +9,10 @@ export interface ModelOption {
 
 export const MODEL_OPTIONS: ModelOption[] = [
   {
-    id: "gpt-5",
-    label: "GPT-5 · OpenAI",
+    id: "gpt-5-mini",
+    label: "GPT-5-Mini · OpenAI",
     provider: "openai",
-    modelName: "gpt-5",
+    modelName: "gpt-5-mini",
   },
   {
     id: "gemini-2.5-flash",
