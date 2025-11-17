@@ -29,7 +29,7 @@ export function useChatScroll() {
     if (!autoScrollRef.current) return;
     const element = containerRef.current;
     if (!element) return;
-    element.scrollTo({ top: element.scrollHeight });
+    element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
   };
 
   return {
