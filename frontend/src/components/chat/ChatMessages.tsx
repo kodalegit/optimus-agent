@@ -47,17 +47,17 @@ export function ChatMessages({
           <div
             key={message.id}
             className={`flex w-full ${
-              isUser ? "justify-end" : "justify-start"
+              isUser ? "justify-end" : "justify-center"
             }`}
           >
             {isUser ? (
-              <div className="max-w-[80%] rounded-2xl border border-sky-500/60 bg-sky-500/10 px-4 py-2.5 text-sm text-neutral-50 shadow-sm backdrop-blur">
+              <div className="max-w-[55%] rounded-2xl border border-sky-500/60 bg-sky-500/10 px-4 py-2.5 text-sm text-neutral-50 shadow-sm backdrop-blur">
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </p>
               </div>
             ) : (
-              <div className="w-full max-w-3xl space-y-1">
+              <div className="w-full max-w-5xl space-y-1">
                 <OptimizedMarkdown content={message.content} />
               </div>
             )}
@@ -66,8 +66,8 @@ export function ChatMessages({
       })}
 
       {lastUserIndex !== -1 && timeline && (
-        <div className="flex w-full justify-start">
-          <div className="w-full max-w-3xl">{timeline}</div>
+        <div className="flex w-full justify-center">
+          <div className="w-full max-w-5xl">{timeline}</div>
         </div>
       )}
 
@@ -78,7 +78,7 @@ export function ChatMessages({
               key={message.id}
               className="flex w-full justify-end"
             >
-              <div className="max-w-[80%] rounded-2xl border border-sky-500/60 bg-sky-500/10 px-4 py-2.5 text-sm text-neutral-50 shadow-sm backdrop-blur">
+              <div className="max-w-[55%] rounded-2xl border border-sky-500/60 bg-sky-500/10 px-4 py-2.5 text-sm text-neutral-50 shadow-sm backdrop-blur">
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </p>
@@ -88,8 +88,8 @@ export function ChatMessages({
         }
 
         return (
-          <div key={message.id} className="flex w-full justify-start">
-            <div className="w-full max-w-3xl space-y-1">
+          <div key={message.id} className="flex w-full justify-center">
+            <div className="w-full max-w-5xl space-y-1">
               <OptimizedMarkdown content={message.content} />
             </div>
           </div>
@@ -97,11 +97,10 @@ export function ChatMessages({
       })}
 
       {hasStreaming && (
-        <div className="flex w-full justify-start">
-          <div className="w-full max-w-3xl space-y-1">
+        <div className="flex w-full justify-center">
+          <div className="w-full max-w-5xl space-y-1">
             {isStreaming && (
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-sky-400">
-                <span>Optimus</span>
                 <span className="inline-flex items-center gap-1 text-[10px] text-sky-400">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-400" />
                   <span>Responding...</span>

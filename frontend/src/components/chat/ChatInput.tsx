@@ -59,7 +59,7 @@ export function ChatInput({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/70">
+      <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900/80">
         <textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -67,7 +67,7 @@ export function ChatInput({
           placeholder="Ask OpsAgent about your operations, tools, or documents..."
           className="w-full min-h-[60px] max-h-[160px] resize-none border-none bg-transparent px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-0"
         />
-        <div className="flex items-center justify-between border-t border-slate-800/80 bg-slate-950/90 px-3 py-2 text-[11px]">
+        <div className="flex items-center justify-between border-t border-slate-700/80 bg-slate-900 px-3 py-2 text-[11px]">
           <div className="flex items-center gap-3">
             {onExampleClick && (
               <Button

@@ -145,8 +145,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-4">
-      <header className="flex flex-col gap-1 border-b border-slate-800/80 pb-3 sm:flex-row sm:items-baseline sm:justify-between">
+    <div className="flex min-h-screen flex-col gap-4 pb-28">
+      <header className="sticky top-2 z-20 flex flex-col gap-1 border-b border-slate-800/80 bg-slate-950/95 pb-3 backdrop-blur sm:flex-row sm:items-baseline sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
             Chat
@@ -165,7 +165,7 @@ export default function ChatPage() {
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-sm"
+          className="flex-1 space-y-3 overflow-y-auto px-4 py-4 pb-6 text-sm"
         >
           {messages.length === 0 && !streamingAssistantContent ? (
             <div className="space-y-3 text-sm text-slate-300">
@@ -214,19 +214,6 @@ export default function ChatPage() {
 
         {chatError && <p className="px-4 text-xs text-red-400">{chatError}</p>}
 
-        <div className="border-t border-slate-800/80 bg-slate-950/95 px-3 py-3">
-          <ChatInput
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSend}
-            disabled={agentMutation.isPending}
-            selectedModelId={modelId}
-            onModelChange={(id) => setModelId(id as ModelId)}
-            isStreaming={isStreaming || agentMutation.isPending}
-            onExampleClick={() => setInput(exampleQuery)}
-          />
-        </div>
-
         {showScrollButton && (
           <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
             <Button
@@ -241,6 +228,21 @@ export default function ChatPage() {
           </div>
         )}
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-900/80 bg-slate-950/90 backdrop-blur md:left-64 md:right-0">
+        <div className="mx-auto w-full max-w-5xl px-4 py-3">
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSend}
+            disabled={agentMutation.isPending}
+            selectedModelId={modelId}
+            onModelChange={(id) => setModelId(id as ModelId)}
+            isStreaming={isStreaming || agentMutation.isPending}
+            onExampleClick={() => setInput(exampleQuery)}
+          />
+        </div>
+      </div>
     </div>
   );
 }

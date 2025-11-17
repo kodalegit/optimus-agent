@@ -32,7 +32,7 @@ export default function RootLayout({
       >
         <ReactQueryProvider>
           <div className="flex min-h-screen bg-slate-950 text-slate-50">
-            <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-slate-800 bg-slate-950/95 px-4 py-6 shadow-xl md:flex">
+            <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-slate-800 bg-slate-950/95 px-4 py-6 shadow-xl md:flex">
               <div className="mb-6 flex items-center gap-2 px-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/40">
                   <span className="text-sm font-semibold">OA</span>
