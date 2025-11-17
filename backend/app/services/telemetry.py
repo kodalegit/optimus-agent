@@ -4,7 +4,6 @@ from functools import lru_cache
 from typing import Sequence
 
 from langchain_core.callbacks import BaseCallbackHandler
-from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
 from ..config import get_settings
@@ -22,10 +21,8 @@ def get_callback_handlers() -> Sequence[BaseCallbackHandler]:
     if not (settings.langfuse_public_key and settings.langfuse_secret_key):
         return tuple()
 
-    langfuse = Langfuse(
-        public_key=settings.langfuse_public_key,
-        secret_key=settings.langfuse_secret_key,
-        host=settings.langfuse_host,
-    )
-    handler: BaseCallbackHandler = CallbackHandler(langfuse)
+    # Langfuse v3 integration: CallbackHandler reads LANGFUSE_PUBLIC_KEY,
+    # LANGFUSE_SECRET_KEY, and LANGFUSE_BASE_URL from the environment via the
+    # Langfuse client. We only instantiate it if credentials are configured.
+    handler: BaseCallbackHandler = CallbackHandler()
     return (handler,)
