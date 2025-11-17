@@ -1,6 +1,6 @@
 """RAG management endpoints (upload + search)."""
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,13 @@ async def upload_document(
 ) -> dict[str, str | int]:
     """Upload a document (PDF or text) and index it for retrieval."""
 
-    document_id = await rag_service.index_document(session, file)
+    try:
+        document_id = await rag_service.index_document(session, file)
+    except ValueError as exc:
+        # Surface validation errors (e.g. empty or non-text content)
+        # as a clear 400 error instead of a generic 500.
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     return {"status": "indexed", "document_id": document_id}
 
 

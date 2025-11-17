@@ -47,7 +47,21 @@ async function handleJsonResponse<T>(
   fallbackError: string
 ): Promise<T> {
   if (!res.ok) {
-    const text = await res.text();
+    // Try to extract a structured error message from JSON payloads first.
+    try {
+      const data = (await res.json()) as any;
+      const detail =
+        (typeof data?.detail === "string" && data.detail) ||
+        (typeof data?.message === "string" && data.message);
+      if (detail) {
+        throw new Error(detail);
+      }
+    } catch {
+      // If JSON parsing fails or there is no structured message, fall back
+      // to using the raw response text.
+    }
+
+    const text = await res.text().catch(() => "");
     throw new Error(text || fallbackError);
   }
   return (await res.json()) as T;
