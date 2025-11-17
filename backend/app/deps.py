@@ -8,10 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .core.db import get_async_session
 
 
-def get_db_session() -> AsyncIterator[AsyncSession]:
-    """Yield an async SQLAlchemy session."""
+async def get_db_session() -> AsyncIterator[AsyncSession]:
+    """Yield an async SQLAlchemy session.
 
-    return get_async_session()
+    This wraps the core get_async_session async generator so that FastAPI
+    receives a proper async dependency rather than an async_generator
+    object.
+    """
+
+    async for session in get_async_session():
+        yield session
 
 
 async def db_session_dependency(

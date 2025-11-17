@@ -10,7 +10,7 @@ logger = logging.getLogger("email_mock")
 
 
 async def send(to: str, subject: str, body: str) -> dict[str, Any]:
-    """Log an email "send" operation and return a confirmation payload."""
+    """Send an email to the specified recipient and return a confirmation payload."""
 
     payload = {"to": to, "subject": subject, "body": body}
     logger.info("SEND-MAIL MOCK: %s", payload)

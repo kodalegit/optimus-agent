@@ -17,12 +17,30 @@ from .prompts import SYSTEM_PROMPT
 
 
 _TOOL_LABELS: dict[str, str] = {
-    "sql_fetch": "SQL lookup",
-    "http_request": "HTTP request",
-    "rag_lookup": "Knowledge lookup",
-    "calculator": "Calculator",
-    "send_mail": "Email",
-    "search": "Search",
+    "sql_fetch": "Database lookup",
+    "http_request": "External API call",
+    "rag_lookup": "Knowledge base search",
+    "calculator": "Calculate value",
+    "send_mail": "Send email",
+    "search": "Search knowledge base",
+}
+
+_REQUEST_LABELS: dict[str, str] = {
+    "sql_fetch": "Searching internal database",
+    "http_request": "Calling external API",
+    "rag_lookup": "Searching knowledge base",
+    "calculator": "Calculating",
+    "send_mail": "Sending email",
+    "search": "Searching knowledge base",
+}
+
+_RESULT_LABELS: dict[str, str] = {
+    "sql_fetch": "Database result",
+    "http_request": "API response",
+    "rag_lookup": "Knowledge result",
+    "calculator": "Calculation result",
+    "send_mail": "Email sent",
+    "search": "Search result",
 }
 
 _FINAL_ANSWER_DELIMITER = "<FINAL_ANSWER>"
@@ -125,7 +143,7 @@ async def stream_agent_events(
                                         "type": "agent_step",
                                         "step": {
                                             "node": node,
-                                            "label": f"{_friendly_tool_title(call.get('name'))} request",
+                                            "label": f"{_REQUEST_LABELS.get(call.get('name'), _friendly_tool_title(call.get('name')))}",
                                             "status": "pending",
                                             "kind": "tool_call",
                                             "tool_name": call.get("name"),
@@ -150,7 +168,7 @@ async def stream_agent_events(
                                 "type": "agent_step",
                                 "step": {
                                     "node": node,
-                                    "label": f"{_friendly_tool_title(tool_name)} result",
+                                    "label": f"{_RESULT_LABELS.get(tool_name, _friendly_tool_title(tool_name))}",
                                     "status": status,
                                     "kind": "tool_result",
                                     "tool_name": tool_name,
@@ -194,11 +212,9 @@ async def stream_agent_events(
                     continue
 
                 final_answer_started = True
-                pending_text = pending_text[index + len(_FINAL_ANSWER_DELIMITER) :]
-                pending_text = pending_text.lstrip("\n ")
 
-            final_text = (final_text or "") + pending_text
-            final_text = final_text.replace(_FINAL_ANSWER_CLOSING, "")
+            combined = (final_text or "") + pending_text
+            final_text = _extract_final_answer(combined)
             pending_text = ""
             yield _format_sse(
                 {
@@ -208,8 +224,8 @@ async def stream_agent_events(
             )
 
     if not final_answer_started and pending_text:
-        final_text = (final_text or "") + pending_text
-        final_text = final_text.replace(_FINAL_ANSWER_CLOSING, "")
+        combined = (final_text or "") + pending_text
+        final_text = _extract_final_answer(combined)
         yield _format_sse(
             {
                 "type": "final_answer",

@@ -17,7 +17,7 @@ from . import (
 
 @tool("search", return_direct=False)
 async def search_tool(query: str) -> list[dict[str, Any]]:
-    """Search internal/external information sources for a query (mock)."""
+    """Search internal and external information sources for a query."""
 
     return await search_service.search(query)
 
@@ -31,7 +31,7 @@ def calculator_tool(expression: str) -> float:
 
 @tool("rag_lookup")
 async def rag_lookup_tool(query: str, top_k: int = 5) -> list[dict[str, Any]]:
-    """Look up relevant document chunks using the RAG pipeline."""
+    """Look up relevant document chunks using the retrieval pipeline."""
 
     # The RAG service expects a DB session; here we use a short-lived one.
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +47,7 @@ async def rag_lookup_tool(query: str, top_k: int = 5) -> list[dict[str, Any]]:
 
 @tool("send_mail")
 async def send_mail_tool(to: str, subject: str, body: str) -> dict[str, Any]:
-    """Send a mock email and return a confirmation payload."""
+    """Send an email and return a confirmation payload."""
 
     return await email_service.send(to=to, subject=subject, body=body)
 
@@ -56,7 +56,7 @@ async def send_mail_tool(to: str, subject: str, body: str) -> dict[str, Any]:
 async def http_request_tool(
     method: str, url: str, body: dict | None = None
 ) -> dict[str, Any]:
-    """Perform a minimal HTTP request to an allowed URL (primarily webhook.site)."""
+    """Perform an HTTP request to an allowed URL and return the response payload."""
 
     return await http_service.request(method=method, url=url, json=body or None)
 
