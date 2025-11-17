@@ -1,42 +1,59 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useChatScroll() {
+export function useChatScroll(dependencies: unknown[] = []) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const autoScrollRef = useRef(true);
+  const userHasScrolledUpRef = useRef(false);
 
-  const handleScroll = () => {
+  const isNearBottom = useCallback(() => {
     const element = containerRef.current;
-    if (!element) return;
+    if (!element) return true;
     const distanceFromBottom =
       element.scrollHeight - element.scrollTop - element.clientHeight;
-    const atBottom = distanceFromBottom < 80;
-    autoScrollRef.current = atBottom;
-    setShowScrollButton(!atBottom);
-  };
+    return distanceFromBottom < 100;
+  }, []);
 
-  const scrollToBottom = () => {
+  const handleScroll = useCallback(() => {
     const element = containerRef.current;
     if (!element) return;
-    element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
-    autoScrollRef.current = true;
+    
+    const nearBottom = isNearBottom();
+    userHasScrolledUpRef.current = !nearBottom;
+    setShowScrollButton(!nearBottom);
+  }, [isNearBottom]);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    const element = containerRef.current;
+    if (!element) return;
+    
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior: smooth ? "smooth" : "instant",
+    });
+    
+    userHasScrolledUpRef.current = false;
     setShowScrollButton(false);
-  };
+  }, []);
 
-  const autoScrollOnChange = () => {
-    if (!autoScrollRef.current) return;
+  // Auto-scroll when content changes
+  useEffect(() => {
+    if (userHasScrolledUpRef.current) return;
+    
     const element = containerRef.current;
     if (!element) return;
-    element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
-  };
+
+    // Use instant scroll for auto-scroll to avoid race conditions
+    requestAnimationFrame(() => {
+      element.scrollTop = element.scrollHeight;
+    });
+  }, dependencies);
 
   return {
     containerRef,
     showScrollButton,
     scrollToBottom,
     handleScroll,
-    autoScrollOnChange,
   };
 }

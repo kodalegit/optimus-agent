@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   streamAgentUpdates,
@@ -35,13 +35,8 @@ export default function ChatPage() {
   const exampleQuery =
     "A customer named David Kim just called. He wants to know the status of his most recent order. Also, look up our return policy for electronics. Based on his order, calculate the potential restocking fee for returning one item that costs $129.99. Finally, send a summary of this to 'ops-support@example.com' with the subject 'Inquiry for David Kim'.";
 
-  const {
-    containerRef,
-    showScrollButton,
-    scrollToBottom,
-    handleScroll,
-    autoScrollOnChange,
-  } = useChatScroll();
+  const { containerRef, showScrollButton, scrollToBottom, handleScroll } =
+    useChatScroll([messages, streamEvents, streamingAssistantContent]);
 
   const agentMutation = useMutation({
     mutationFn: async (payload: AgentQueryRequest) => {
@@ -98,10 +93,6 @@ export default function ChatPage() {
       return { message: latestText };
     },
   });
-
-  useEffect(() => {
-    autoScrollOnChange();
-  }, [messages, streamEvents, streamingAssistantContent, autoScrollOnChange]);
 
   const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -229,7 +220,7 @@ export default function ChatPage() {
               size="icon-sm"
               variant="outline"
               className="pointer-events-auto h-8 w-8 rounded-full border-slate-700 bg-slate-900/90 text-slate-100 shadow-sm hover:bg-slate-800"
-              onClick={scrollToBottom}
+              onClick={() => scrollToBottom()}
             >
               <ArrowDown className="h-3.5 w-3.5" />
             </Button>
