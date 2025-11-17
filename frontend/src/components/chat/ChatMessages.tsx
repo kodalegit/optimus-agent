@@ -58,9 +58,6 @@ export function ChatMessages({
               </div>
             ) : (
               <div className="w-full max-w-3xl space-y-1">
-                <div className="text-[11px] font-medium uppercase tracking-wide text-sky-400">
-                  Optimus
-                </div>
                 <OptimizedMarkdown content={message.content} />
               </div>
             )}
@@ -76,8 +73,6 @@ export function ChatMessages({
 
       {trailingMessages.map((message) => {
         if (message.role === "user") {
-          // Trailing user messages after the latest one that triggered the
-          // current timeline are unlikely, but render them as normal bubbles.
           return (
             <div
               key={message.id}
@@ -95,9 +90,6 @@ export function ChatMessages({
         return (
           <div key={message.id} className="flex w-full justify-start">
             <div className="w-full max-w-3xl space-y-1">
-              <div className="text-[11px] font-medium uppercase tracking-wide text-sky-400">
-                Optimus
-              </div>
               <OptimizedMarkdown content={message.content} />
             </div>
           </div>
