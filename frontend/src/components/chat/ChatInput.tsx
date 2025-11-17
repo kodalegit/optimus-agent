@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, KeyboardEvent } from "react";
+import { useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { MODEL_OPTIONS, type ModelOption } from "@/lib/models";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,18 @@ export function ChatInput({
   isStreaming,
   onExampleClick,
 }: ChatInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const adjustTextareaHeight = () => {
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = "auto";
+    const maxHeight = 160;
+    const nextHeight = Math.min(element.scrollHeight, maxHeight);
+    element.style.height = `${nextHeight}px`;
+    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     onSubmit(event);
   };
@@ -57,12 +69,20 @@ export function ChatInput({
 
   const isSendDisabled = disabled || !value.trim();
 
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [value]);
+
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900/80">
         <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onChange(event.target.value);
+            adjustTextareaHeight();
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Ask Optimus about your operations, tools, or documents..."
           className="w-full min-h-[60px] max-h-[160px] resize-none border-none bg-transparent px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-0"

@@ -73,7 +73,7 @@ export default function ChatPage() {
 
             if (event.type === "agent_step") {
               const aiMessages = event.step.messages.filter(
-                (message) => message.type === "ai",
+                (message) => message.type === "ai"
               );
               const last = aiMessages[aiMessages.length - 1];
               if (last) {
@@ -82,7 +82,7 @@ export default function ChatPage() {
               }
             }
           },
-          controller.signal,
+          controller.signal
         );
       } catch (error) {
         const message =
@@ -168,25 +168,33 @@ export default function ChatPage() {
           className="flex-1 space-y-3 overflow-y-auto px-4 py-4 pb-6 text-sm"
         >
           {messages.length === 0 && !streamingAssistantContent ? (
-            <div className="space-y-3 text-sm text-slate-300">
-              <p className="text-slate-400">
-                Start by asking about real-world operational scenarios. Optimus
-                can combine tools, RAG, and email to resolve a case end-to-end.
-              </p>
-              <div className="rounded-xl border border-slate-800/80 bg-slate-950/70 p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Try this scenario
+            <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-400">
+              <div className="max-w-xl space-y-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Get started with Optimus
+                </p>
+                <p className="text-sm text-slate-400">
+                  Ask about real-world operational scenarios. Optimus can
+                  combine tools, RAG, and email to resolve a case end-to-end.
+                </p>
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4 text-left">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Try this scenario
+                  </div>
+                  <p className="mt-2 text-[13px] leading-relaxed text-slate-200">
+                    A customer calls about a recent order and wants to know its
+                    status, whether an electronics item is returnable, what
+                    restocking fee applies, and to have a summary emailed to
+                    support.
+                  </p>
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    Use the{" "}
+                    <span className="font-medium text-sky-400">
+                      Example query
+                    </span>{" "}
+                    button below to prefill this scenario.
+                  </p>
                 </div>
-                <p className="mt-2 text-[13px] leading-relaxed text-slate-200">
-                  A customer calls about a recent order and wants to know its
-                  status, whether an electronics item is returnable, what
-                  restocking fee applies, and to have a summary emailed to
-                  support.
-                </p>
-                <p className="mt-2 text-[11px] text-slate-500">
-                  Use the <span className="font-medium text-sky-400">Example query</span>{" "}
-                  button below to prefill this scenario.
-                </p>
               </div>
             </div>
           ) : (
