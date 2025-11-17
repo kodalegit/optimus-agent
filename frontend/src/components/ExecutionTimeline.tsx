@@ -43,7 +43,9 @@ export function ExecutionTimeline({
     )
     .map((event) => event.step);
 
-  const hasFinalStep = steps.some((step) => step.kind === "final");
+  const hasFinalStep =
+    events.some((event) => event.type === "final_answer") ||
+    steps.some((step) => step.kind === "final");
   const hasAnySteps = steps.length > 0;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -86,7 +88,7 @@ export function ExecutionTimeline({
             <button
               type="button"
               onClick={() => setIsCollapsed((previous) => !previous)}
-              className="rounded-full border border-neutral-700 bg-neutral-900 px-2 py-0.5 text-[10px] text-neutral-300 hover:border-neutral-500"
+              className="rounded-full border border-neutral-700 cursor-pointer bg-neutral-900 px-2 py-0.5 text-[10px] text-neutral-300 hover:border-neutral-500"
             >
               {isCollapsed ? "Show details" : "Hide details"}
             </button>

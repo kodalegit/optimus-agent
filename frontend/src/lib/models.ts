@@ -9,16 +9,16 @@ export interface ModelOption {
 
 export const MODEL_OPTIONS: ModelOption[] = [
   {
-    id: "gpt-5-mini",
-    label: "GPT-5-Mini · OpenAI",
-    provider: "openai",
-    modelName: "gpt-5-mini",
-  },
-  {
     id: "gemini-2.5-flash",
     label: "Gemini 2.5 Flash · Google",
     provider: "google",
     modelName: "gemini-2.5-flash",
+  },
+  {
+    id: "gpt-5-mini",
+    label: "GPT-5-Mini · OpenAI",
+    provider: "openai",
+    modelName: "gpt-5-mini",
   },
 ];
 
