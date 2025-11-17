@@ -27,7 +27,7 @@ const STATUS_META: Record<
 const KIND_LABEL: Record<AgentStepKind, string> = {
   tool_call: "Tool call",
   tool_result: "Tool result",
-  thought: "Agent thought",
+  thought: "Agent reasoning",
   final: "Final answer",
 };
 
@@ -129,9 +129,9 @@ export function ExecutionTimeline({
                       </summary>
 
                       <div className="space-y-1 border-t border-neutral-800 px-2 py-2 text-[11px] text-neutral-200">
-                        {step.preview && (
+                        {step.kind === "tool_call" && step.preview && (
                           <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-2 text-[10px] text-neutral-300">
-                            Preview: {step.preview}
+                            Inputs: {step.preview}
                           </div>
                         )}
                         {step.messages.map((message, messageIndex) => (
