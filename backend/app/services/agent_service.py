@@ -160,9 +160,27 @@ async def stream_agent_events(
                                 )
 
                     elif message_type == "tool":
-                        preview = _preview_text(serialized["content"])
+                        raw_content = serialized["content"]
+                        preview = _preview_text(raw_content)
                         tool_name = serialized.get("name")
-                        status = "error" if "error" in preview.lower() else "done"
+
+                        # Prefer a structured status field from JSON tool payloads.
+                        structured_status: str | None = None
+                        try:
+                            parsed = json.loads(raw_content)
+                            if isinstance(parsed, dict):
+                                raw_status = parsed.get("status")
+                                if isinstance(raw_status, str):
+                                    structured_status = raw_status.lower()
+                        except Exception:  # JSON decoding is best-effort only
+                            structured_status = None
+
+                        if structured_status == "error":
+                            status = "error"
+                        else:
+                            # Fallback to heuristic for tools that do not yet
+                            # return a structured status field.
+                            status = "error" if "error" in preview.lower() else "done"
                         yield _format_sse(
                             {
                                 "type": "agent_step",
