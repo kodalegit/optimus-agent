@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OpsAgent Console",
+  title: "Optimus Console",
   description: "Internal operations AI assistant",
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold tracking-tight">
-                    OpsAgent Console
+                    Optimus Console
                   </span>
                   <span className="text-[11px] text-slate-400">
                     Internal operations assistant

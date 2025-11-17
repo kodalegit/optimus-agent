@@ -64,7 +64,7 @@ export function ChatInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask OpsAgent about your operations, tools, or documents..."
+          placeholder="Ask Optimus about your operations, tools, or documents..."
           className="w-full min-h-[60px] max-h-[160px] resize-none border-none bg-transparent px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-0"
         />
         <div className="flex items-center justify-between border-t border-slate-700/80 bg-slate-900 px-3 py-2 text-[11px]">
@@ -95,9 +95,6 @@ export function ChatInput({
                   ))}
                 </SelectContent>
               </Select>
-              <span className="hidden text-[11px] text-slate-500 sm:inline">
-                {selectedModel.label}
-              </span>
             </div>
           </div>
 

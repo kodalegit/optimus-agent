@@ -146,7 +146,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex min-h-screen flex-col gap-4 pb-28">
-      <header className="sticky top-2 z-20 flex flex-col gap-1 border-b border-slate-800/80 bg-slate-950/95 pb-3 backdrop-blur sm:flex-row sm:items-baseline sm:justify-between">
+      <header className="sticky top-0 z-20 pt-2 flex flex-col gap-1 border-b border-slate-800/80 bg-slate-950/95 pb-3 backdrop-blur sm:flex-row sm:items-baseline sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
             Chat
