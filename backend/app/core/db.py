@@ -61,8 +61,38 @@ async def init_db() -> None:
         await conn.execute(
             text(
                 """
+                INSERT INTO customers (customer_id, name, email)
+                VALUES (101, 'David Kim', 'david.kim@example.com')
+                ON CONFLICT (customer_id) DO NOTHING
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
+                INSERT INTO customers (customer_id, name, email)
+                VALUES (102, 'Aisha Patel', 'aisha.patel@example.com')
+                ON CONFLICT (customer_id) DO NOTHING
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
                 INSERT INTO orders (order_id, customer_id, order_date, status_tracking_id)
                 VALUES (98765, 42, NOW(), 'SHP12345')
+                ON CONFLICT (order_id) DO NOTHING
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
+                INSERT INTO orders (order_id, customer_id, order_date, status_tracking_id)
+                VALUES (12345, 101, NOW(), 'SHP67890')
                 ON CONFLICT (order_id) DO NOTHING
                 """
             )
