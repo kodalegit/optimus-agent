@@ -34,7 +34,7 @@ The main user flow:
 Clone this repository locally before running any commands:
 
 ```bash
-git clone <your-fork-or-repo-url>
+git clone https://github.com/kodalegit/optimus-agent.git
 cd optimus-agent
 ```
 
