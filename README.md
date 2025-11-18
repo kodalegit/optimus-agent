@@ -29,6 +29,17 @@ The main user flow:
 
 ---
 
+## 1.1. Cloning the Repository
+
+Clone this repository locally before running any commands:
+
+```bash
+git clone <your-fork-or-repo-url>
+cd optimus-agent
+```
+
+Then follow the steps below to configure environment variables and start the stack with Docker Compose.
+
 ## 2. Running the System
 
 ### 2.1. Prerequisites
