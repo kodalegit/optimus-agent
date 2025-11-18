@@ -24,7 +24,7 @@ class AgentQueryResponse(BaseModel):
 
 @router.post("/query", response_model=AgentQueryResponse)
 async def run_agent_query(payload: AgentQueryRequest) -> AgentQueryResponse:
-    """Placeholder sync-style agent endpoint."""
+    """Agent sync-style endpoint."""
 
     message = await execute_agent_query(
         query=payload.query,
@@ -36,7 +36,7 @@ async def run_agent_query(payload: AgentQueryRequest) -> AgentQueryResponse:
 
 @router.post("/stream")
 async def stream_agent_response(payload: AgentQueryRequest) -> StreamingResponse:
-    """Placeholder streaming endpoint until the agent service is wired."""
+    """Agent streaming endpoint."""
 
     event_stream = stream_agent_events(
         query=payload.query,
